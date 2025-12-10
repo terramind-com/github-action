@@ -1,10 +1,12 @@
 {
-  "name": "github",
+  "name": "terramind-github-action",
+  "version": "1.0.0",
+  "description": "Terramind AI coding agent for GitHub",
   "module": "index.ts",
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@types/bun": "catalog:"
+    "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -14,6 +16,6 @@
     "@actions/github": "6.0.1",
     "@octokit/graphql": "9.0.1",
     "@octokit/rest": "22.0.0",
-    "@terramind/sdk": "workspace:*"
+    "@terramind/sdk": "latest"
   }
 }
