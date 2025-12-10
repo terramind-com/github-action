@@ -6,8 +6,9 @@ branding:
 
 inputs:
   model:
-    description: "Model to use"
-    required: true
+    description: "Model to use (optional, defaults to claude-opus-4-5)"
+    required: false
+    default: "claude-opus-4-5"
 
   share:
     description: "Share the Terramind session (defaults to true for public repos)"
