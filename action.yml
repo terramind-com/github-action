@@ -6,9 +6,9 @@ branding:
 
 inputs:
   model:
-    description: "Model to use (optional, defaults to claude-opus-4-5)"
+    description: "Model to use (optional, defaults to gpt-5.4)"
     required: false
-    default: "claude-opus-4-5"
+    default: "gpt-5.4"
 
   share:
     description: "Share the Terramind session (defaults to true for public repos)"
@@ -28,3 +28,4 @@ runs:
       env:
         MODEL: ${{ inputs.model }}
         SHARE: ${{ inputs.share }}
+
