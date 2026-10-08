@@ -30,6 +30,22 @@ Leave the following comment on a GitHub PR. Terramind will implement the request
 Delete the attachment from S3 when the note is removed @terramind
 ```
 
+#### Show the change
+
+On a PR that changes UI, Terramind can capture before/after screenshots with a headless browser and attach them to the PR.
+
+```
+@terramind add before/after screenshots
+```
+
+The browser is set up automatically on Linux runners using the runner's own Chrome. Turn it off with `browser: "false"`:
+
+```yml
+- uses: terramind-com/github-action@main
+  with:
+    browser: "false"
+```
+
 ## Installation
 
 Run the following command in the terminal from your GitHub repo:

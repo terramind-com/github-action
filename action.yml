@@ -14,12 +14,62 @@ inputs:
     description: "Share the Terramind session (defaults to true for public repos)"
     required: false
 
+  browser:
+    description: >-
+      Give the agent a headless browser (agent-browser + the runner's Chrome) so it
+      can capture before/after screenshots for pull requests. Set to "false" to skip.
+    required: false
+    default: "true"
+
 runs:
   using: "composite"
   steps:
     - name: Install Terramind
       shell: bash
       run: curl -fsSL https://terramind.com/install | bash
+
+    # The CLI offers its browser tools only when an `agent-browser` binary is on
+    # PATH; without one the agent simply has no browser. The version is pinned
+    # to the one Nucleus ships (ide: src/shared/browser/agent-browser-version.json)
+    # and every download is checked against the GitHub release digest — bump
+    # all three values together. Chrome is the runner's own (GitHub's Ubuntu
+    # images ship google-chrome); nothing here can fail the job.
+    - name: Install headless browser
+      if: inputs.browser != 'false'
+      shell: bash
+      env:
+        AGENT_BROWSER_VERSION: "0.38.2"
+        AGENT_BROWSER_SHA256_LINUX_X64: "a54b765192db774666f0513fa8b545a298753b6f29e73bcdf4a1e78f18e7c0e1"
+        AGENT_BROWSER_SHA256_LINUX_ARM64: "690c02d952de8497bba4f8cc58b59acbf27dc27b346755869b518f4b411c7f40"
+      run: |
+        set -uo pipefail
+        skip() { echo "::warning title=Terramind browser::$1 Continuing without a browser."; exit 0; }
+
+        [ "$RUNNER_OS" = "Linux" ] || skip "Browser setup supports Linux runners only."
+        case "$RUNNER_ARCH" in
+          X64)   asset=agent-browser-linux-x64;   sha="$AGENT_BROWSER_SHA256_LINUX_X64" ;;
+          ARM64) asset=agent-browser-linux-arm64; sha="$AGENT_BROWSER_SHA256_LINUX_ARM64" ;;
+          *)     skip "No pinned agent-browser build for $RUNNER_ARCH." ;;
+        esac
+
+        chrome=""
+        for c in google-chrome google-chrome-stable chromium chromium-browser; do
+          if command -v "$c" >/dev/null 2>&1; then chrome="$(command -v "$c")"; break; fi
+        done
+        [ -n "$chrome" ] || skip "No Chrome or Chromium found on this runner."
+
+        bin="$RUNNER_TEMP/terramind-bin"
+        mkdir -p "$bin"
+        curl -fsSL --retry 4 --retry-delay 2 -o "$bin/agent-browser" \
+          "https://github.com/vercel-labs/agent-browser/releases/download/v${AGENT_BROWSER_VERSION}/${asset}" \
+          || skip "Could not download agent-browser ${AGENT_BROWSER_VERSION}."
+        echo "${sha}  $bin/agent-browser" | sha256sum -c - >/dev/null \
+          || { rm -f "$bin/agent-browser"; skip "agent-browser checksum mismatch; refusing to use it."; }
+        chmod 0755 "$bin/agent-browser"
+
+        echo "$bin" >> "$GITHUB_PATH"
+        echo "AGENT_BROWSER_EXECUTABLE_PATH=$chrome" >> "$GITHUB_ENV"
+        echo "agent-browser $("$bin/agent-browser" --version | awk '{print $2}') with $("$chrome" --version)"
 
     - name: Run Terramind
       shell: bash
